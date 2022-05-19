@@ -1,0 +1,6 @@
+[submodule ".sdk"]
+	path = .sdk
+	url = https://github.com/zBlueBird/temperture.git
+[submodule "tools/rtltool"]
+	path = tools/rtltool
+	url = https://github.com/cyber-murmel/rtltool.git
