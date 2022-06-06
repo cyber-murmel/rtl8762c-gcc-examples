@@ -1,6 +1,7 @@
-BOARD ?= EH-MC17_FEATHER
+BOARD ?= devboard
 BOARD_DIR ?= boards/$(BOARD)
-TARGET ?= blink
+TARGET ?= 00-blink
+TARGET_DIR ?= ./src/targets/$(TARGET)
 PORT ?= /dev/ttyUSB1
 
 FTDI_VERSION ?= ft2232h
@@ -11,16 +12,18 @@ $(error Invalid BOARD specified: $(BOARD_DIR))
 endif
 
 include ./mkenv.mk
-include $(BOARD_DIR)/mpconfigboard.mk
+include $(BOARD_DIR)/board_config.mk
 
 CROSS_COMPILE ?= arm-none-eabi-
 
 DIRS = $(sort \
 	./ \
-	./src/$(TARGET)/ \
+	./src/ \
+	./inc/ \
 	./config/ \
 	$(BUILD) \
 	$(BOARD_DIR) \
+	$(TARGET_DIR)/ \
 	sdk/inc/ \
 	sdk/inc/platform/ \
 	sdk/inc/platform/cmsis/ \
@@ -31,6 +34,7 @@ DIRS = $(sort \
 	sdk/src/ble/privacy/ \
 	sdk/inc/os/ \
 	sdk/inc/app/ \
+	sdk/src/ble/privacy \
 )
 
 INC += $(addprefix -I,$(DIRS))
@@ -40,7 +44,7 @@ CFLAGS_CORTEX_M4 = -mthumb -mcpu=cortex-m4 -mfpu=fpv4-sp-d16 -mfloat-abi=hard
 CFLAGS = $(INC) -Wall -fdata-sections -ffunction-sections -std=c99 $(CFLAGS_CORTEX_M4) $(COPT)
 LDFLAGS = $(CFLAGS_CORTEX_M4) -specs=nano.specs -Trtl8762c.ld -Wl,-Map=$(basename $@).map,--cref -Wl,--gc-sections -Wl,--defsym=FIRMWARE_SIZE=$(FIRMWARE_SIZE)
 
-CFLAGS += -include src/$(TARGET)/app_flags.h -DFIRMWARE_SIZE=$(FIRMWARE_SIZE) -DFLASH_SIZE=$(FLASH_SIZE)
+CFLAGS += -include $(TARGET_DIR)/app_flags.h -DFIRMWARE_SIZE=$(FIRMWARE_SIZE) -DFLASH_SIZE=$(FLASH_SIZE)
 
 # Tune for Debugging or Optimization
 ifeq ($(DEBUG), 1)
@@ -72,18 +76,27 @@ LIBS = -lc -lm -lnosys sdk/bin/rom_symbol_gcc.axf \
 	sdk/bin/sbc_lib_o3.lib \
 	sdk/bin/system_trace.lib \
 
-SRC_S =  sdk/src/mcu/rtl876x/arm/startup_rtl8762c_gcc.s
+# Source Files
+include $(TARGET_DIR)/mksrc.mk
 
-SRC_C = \
+SRC_S += sdk/src/mcu/rtl876x/arm/startup_rtl8762c_gcc.s
+
+SRC_C += \
     sdk/src/mcu/rtl876x/system_rtl8762c.c \
 	sdk/src/mcu/peripheral/rtl876x_rcc.c \
 	sdk/src/mcu/peripheral/rtl876x_gpio.c \
-	$(wildcard src/$(TARGET)/*.c) \
+	sdk/src/mcu/peripheral/rtl876x_uart.c \
+	sdk/src/ble/privacy/privacy_mgnt.c \
+	# $(wildcard src/$(TARGET)/*.c) \
 
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_CXX:.cpp=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
+OEM_CONFIG ?= $(BUILD)/oem_config.bin
+OTA_BANK0_HEADER ?= $(BUILD)/ota_bank0_header.bin
+
+# Custom Targets
 all: $(BUILD)/image.bin
 
 $(BUILD)/firmware.elf: $(OBJ)
@@ -94,9 +107,9 @@ $(BUILD)/firmware.elf: $(OBJ)
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
 	$(Q)$(OBJCOPY) --output-target=binary $^ $@
 
-$(BUILD)/image.bin: $(BUILD)/firmware.bin $(BUILD)/oem_config.bin $(BUILD)/ota_bank_header.bin
+$(BUILD)/image.bin: $(BUILD)/firmware.bin $(OEM_CONFIG) $(OTA_BANK0_HEADER)
 	$(Q)$(DD) if=$(OEM_CONFIG) bs=1 seek=0 of=$@
-	$(Q)$(DD) if=$(BUILD)/ota_bank_header.bin bs=1 seek=4096 of=$@
+	$(Q)$(DD) if=$(OTA_BANK0_HEADER) bs=1 seek=4096 of=$@
 	$(Q)$(DD) if=sdk/config/patch.bin bs=1 skip=512 seek=8192 of=$@
 	$(Q)$(DD) if=sdk/config/fsbl.bin bs=1 skip=512 seek=49152 of=$@
 	$(Q)$(DD) if=$(BUILD)/firmware.bin bs=1 seek=53248 of=$@
@@ -108,16 +121,14 @@ $(BUILD)/oem_config.bin: $(BUILD)/oem_config.o
 $(BUILD)/oem_config.o: config/oem_config.c
 	$(Q)$(CC) -c -Wno-override-init $(CFLAGS) $< -o $@
 
-$(BUILD)/ota_bank_header.bin: $(BUILD)/ota_bank_header.o
+$(BUILD)/ota_bank0_header.bin: $(BUILD)/ota_bank0_header.o
 	$(Q)$(OBJCOPY) --output-target=binary $< $@
 	$(Q)$(PYTHON) tools/crc_patch.py $@
-	cp $@ $@.bak
-	# cp ota_bank0_header.bin $@
-	# dd if=OTAHeader_Bank0-92d1bc8e773dda0c87a690481c7ac4d4.bin bs=1 skip=512 of=$@
 
-$(BUILD)/ota_bank_header.o: config/ota_bank_header.c
+$(BUILD)/ota_bank0_header.o: config/ota_bank0_header.c
 	$(Q)$(CC) -c -Wno-override-init $(CFLAGS) $< -o $@
 
+# Helper Targets
 debug_ftdi: $(BUILD)/firmware.elf
 	$(Q)$(GDB) $< \
 		$(addprefix --directory ,$(DIRS)) \
@@ -131,5 +142,12 @@ flash: $(BUILD)/image.bin
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash 0x00801000 $<
 .PHONY: flash
 
+term:
+	python3 -m serial.tools.miniterm --exit-char 24 --rts 0 --dtr 0 $(PORT) 115200
+.PHONY: term
+
+format:
+	find src/ -name '*.[ch]' -exec clang-format -i -style=WebKit {} +
+.PHONY: format
 
 include ./mkrules.mk

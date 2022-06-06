@@ -31,8 +31,8 @@ T_OTA_HEADER_FORMAT ota_header = {
 	.exe_base = 0xFFFFFFFF,
 	.load_base = 0xFFFFFFFF,
 	STRUCT_ARRAY_SETTER(ota_header, rsvd0, 0xff),
-	.auto_enter_dfu_mode_pattern = 0xFFFFFFFF,
-	.single_bank_ota_pattern = 0xFFFFFFFF,
+	.auto_enter_dfu_mode_pattern = 0xFFFF,
+	.single_bank_ota_pattern = 0xFFFF,
 	.magic_pattern = 0x5A5A12A5,
 	STRUCT_ARRAY_SETTER(ota_header, rsvd1, 0xff),
 	.git_ver = {
