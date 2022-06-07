@@ -15,7 +15,7 @@ To build the firmware you need
 - arm-none-eabi-gcc (GNU Arm Embedded Toolchain 9-2020-q2-update) 9.3.1 20200408 (release)
 
 ### rtltool
-For flashing you need to install the dependencies for  [rtltool](tools/rtltool/README.md).
+For flashing you need to install the dependencies for  [rtltool](https://github.com/cyber-murmel/rtltool/blob/main/README.md#python-modules).
 
 ### Nix
 Users of Nix or NixOS can simply run `nix-shell` to enter an environment with all necessary dependencies.
