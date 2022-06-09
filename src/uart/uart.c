@@ -143,7 +143,7 @@ int uart_printf(const uart_t* uart_p, char* fmt, ...)
 
     len = vsnprintf(uart_p->tx_buf.data, uart_p->tx_buf.size, fmt, argptr);
     if (len > 0) {
-        if(!uart_printn(uart_p, uart_p->tx_buf.data, len)) {
+        if (!uart_printn(uart_p, uart_p->tx_buf.data, len)) {
             return -1;
         }
     }
