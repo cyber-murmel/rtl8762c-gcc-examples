@@ -30,7 +30,7 @@ void pin_init(pin_t* pin_p)
     if (SW_MODE == pin_p->mode) {
         Pinmux_Config(pin_p->id.pad, IDLE_MODE);
     } else {
-        GPIOMode_TypeDef direction = (PAD_OUT_DISABLE == pin_p->direction) ? GPIO_Mode_IN : GPIO_Mode_OUT;
+        GPIOMode_TypeDef direction = (IN == pin_p->direction) ? GPIO_Mode_IN : GPIO_Mode_OUT;
 
         GPIO_StructInit(&Gpio_Struct);
         Gpio_Struct.GPIO_Pin = pin_p->id.bit;
