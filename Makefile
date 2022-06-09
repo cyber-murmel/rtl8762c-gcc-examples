@@ -2,7 +2,6 @@ BOARD ?= devboard
 BOARD_DIR ?= boards/$(BOARD)
 TARGET ?= 00-blink
 TARGET_DIR ?= ./src/targets/$(TARGET)
-PORT ?= /dev/ttyUSB1
 
 FTDI_VERSION ?= ft2232h
 FTDI_SWD_CHANNEL ?= 0
@@ -13,6 +12,7 @@ endif
 
 include ./mkenv.mk
 include $(BOARD_DIR)/board_config.mk
+PORT ?= /dev/ttyUSB1
 
 CROSS_COMPILE ?= arm-none-eabi-
 
@@ -95,10 +95,17 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
 OEM_CONFIG ?= $(BUILD)/oem_config.bin
 OTA_BANK0_HEADER ?= $(BUILD)/ota_bank0_header.bin
+FSBL ?= $(BUILD)/fsbl.bin
+PATCH ?= $(BUILD)/patch.bin
 
 # Custom Targets
-all: $(BUILD)/image.bin
+all: $(BUILD)/firmware.bin
+.PHONY: all
 
+image: $(BUILD)/image.bin
+.PHONY: image
+
+## Firmware
 $(BUILD)/firmware.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
@@ -107,28 +114,40 @@ $(BUILD)/firmware.elf: $(OBJ)
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
 	$(Q)$(OBJCOPY) --output-target=binary $^ $@
 
-$(BUILD)/image.bin: $(BUILD)/firmware.bin $(OEM_CONFIG) $(OTA_BANK0_HEADER)
+## Image
+$(BUILD)/image.bin: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(PATCH) $(FSBL) $(BUILD)/firmware.bin
 	$(Q)$(DD) if=$(OEM_CONFIG) bs=1 seek=0 of=$@
 	$(Q)$(DD) if=$(OTA_BANK0_HEADER) bs=1 seek=4096 of=$@
-	$(Q)$(DD) if=sdk/config/patch.bin bs=1 skip=512 seek=8192 of=$@
-	$(Q)$(DD) if=sdk/config/fsbl.bin bs=1 skip=512 seek=49152 of=$@
+	$(Q)$(DD) if=$(PATCH) bs=1 seek=8192 of=$@
+	$(Q)$(DD) if=$(FSBL) bs=1 seek=49152 of=$@
 	$(Q)$(DD) if=$(BUILD)/firmware.bin bs=1 seek=53248 of=$@
 
+### Image Parts
 $(BUILD)/oem_config.bin: $(BUILD)/oem_config.o
 	$(Q)$(OBJCOPY) --output-target=binary $< $@
 	$(Q)$(PYTHON) tools/crc_patch.py $@
 
-$(BUILD)/oem_config.o: config/oem_config.c
+$(BUILD)/oem_config.o: config/oem_config.c | $(BUILD)
 	$(Q)$(CC) -c -Wno-override-init $(CFLAGS) $< -o $@
 
 $(BUILD)/ota_bank0_header.bin: $(BUILD)/ota_bank0_header.o
 	$(Q)$(OBJCOPY) --output-target=binary $< $@
 	$(Q)$(PYTHON) tools/crc_patch.py $@
 
-$(BUILD)/ota_bank0_header.o: config/ota_bank0_header.c
+$(BUILD)/ota_bank0_header.o: config/ota_bank0_header.c | $(BUILD)
 	$(Q)$(CC) -c -Wno-override-init $(CFLAGS) $< -o $@
 
+$(BUILD)/fsbl.bin: sdk/tool/download/fsbl_MP_master\#\#_1.1.2.0_99b57f16-3e14e3bf53eb7ed34098cbae7dd01680.bin | $(BUILD)
+	$(Q)$(DD) if=$< bs=1 skip=512 of=$@
+
+$(BUILD)/patch.bin: | $(BUILD)
+	$(ECHO) reading back patch binary from device at hand
+	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) read_flash 0x00803000 0x0000A000 $@
+
 # Helper Targets
+$(BUILD):
+	$(Q)$(MKDIR) -p $@
+
 debug_ftdi: $(BUILD)/firmware.elf
 	$(Q)$(GDB) $< \
 		$(addprefix --directory ,$(DIRS)) \
@@ -138,7 +157,15 @@ debug_ftdi: $(BUILD)/firmware.elf
 		-ex 'continue'
 .PHONY: debug_ftdi
 
-flash: $(BUILD)/image.bin
+flash: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(FSBL) $(BUILD)/firmware.bin
+	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash \
+		0x00801000 $(OEM_CONFIG) \
+		0x00802000 $(OTA_BANK0_HEADER) \
+		0x0080D000 $(FSBL) \
+		0x0080E000 $(BUILD)/firmware.bin
+.PHONY: flash
+
+flash_image: $(BUILD)/image.bin
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash 0x00801000 $<
 .PHONY: flash
 
