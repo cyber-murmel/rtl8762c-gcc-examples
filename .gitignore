@@ -54,6 +54,7 @@ dkms.conf
 # Project Specific
 build/
 openocd.log
+*.bin
 
 # IDE Specific
 .vscode/

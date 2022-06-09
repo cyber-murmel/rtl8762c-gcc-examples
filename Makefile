@@ -143,6 +143,9 @@ $(BUILD)/patch.bin: | $(BUILD)
 	$(ECHO) reading back patch binary from device at hand
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) read_flash 0x00803000 0x0000A000 $@
 
+backup-$(BOARD).bin: | $(BUILD)
+	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) read_flash 0x00801000 $(FLASH_SIZE) $@
+
 # Helper Targets
 $(BUILD):
 	$(Q)$(MKDIR) -p $@
@@ -167,6 +170,13 @@ flash: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(FSBL) $(BUILD)/firmware.bin
 flash_image: $(BUILD)/image.bin
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash 0x00801000 $<
 .PHONY: flash
+
+backup: backup-$(BOARD).bin
+.PHONY: backup
+
+playback: backup-$(BOARD).bin
+	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash 0x00801000 $<
+.PHONY: playback
 
 term:
 	python3 -m serial.tools.miniterm --exit-char 24 --rts 0 --dtr 0 $(PORT) 115200
