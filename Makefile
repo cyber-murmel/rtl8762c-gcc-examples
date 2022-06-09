@@ -87,7 +87,6 @@ SRC_C += \
 	sdk/src/mcu/peripheral/rtl876x_gpio.c \
 	sdk/src/mcu/peripheral/rtl876x_uart.c \
 	sdk/src/ble/privacy/privacy_mgnt.c \
-	# $(wildcard src/$(TARGET)/*.c) \
 
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_CXX:.cpp=.o))
