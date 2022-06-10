@@ -18,40 +18,9 @@
 
 static uart_t* uarts[NUM_UARTS];
 
-static inline int uart_to_idx(uart_t* uart_p)
-{
-    switch ((size_t)(uart_p->id.register_p)) {
-    case UART0_REG_BASE: {
-        return 0;
-    } break;
-    case UART1_REG_BASE: {
-        return 1;
-    } break;
-    case UART2_REG_BASE: {
-        return 2;
-    } break;
-    default: {
-        return -1;
-    } break;
-    }
-}
-
-/**
- * @brief Initialize the UART abstraction layer
- *
- * @param uart_p Reference to UART describing struct
- * @param msg_q_p Message queue handle to publish UART events to
- */
 bool uart_init(uart_t* uart_p)
 {
-    int uart_idx = uart_to_idx(uart_p);
-
-    if (-1 == uart_idx) {
-        // invalid UART index
-        return false;
-    }
-
-    uarts[uart_idx] = uart_p;
+    uarts[uart_p->id.index] = uart_p;
 
     if (true != os_mutex_create(&(uart_p->mutex_p))) {
         // the mutex was not created successfully
@@ -103,13 +72,6 @@ void uart_flush(const uart_t* uart_p)
         ;
 }
 
-/**
- * @details Flush UART, copy data into buffer, start GDMA transmission and
- * return
- *
- * @todo find sensible mutex timeout
- *
- */
 bool uart_printn(const uart_t* uart_p, const char* str, size_t vCount)
 {
     size_t i = 0;
@@ -209,7 +171,7 @@ static void _genericUARTHandler(int idx)
     __enable_irq();
 }
 
-/* attach generic handler to all possible pins */
+/* attach generic handler to all possible uarts */
 #define UART_HANDLER(IDX)          \
     void UART##IDX##_Handler(void) \
     {                              \

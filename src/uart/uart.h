@@ -15,15 +15,14 @@
 #ifndef _UART_H
 #define _UART_H
 
-#define UART_ID_hlp(_UART)                                                        \
-    {                                                                             \
-        .register_p = (UART_TypeDef*)_UART##_REG_BASE,                            \
-        .rcc_periph = RCC_PERIPH(_UART), .irq_channel = _UART##_IRQn,             \
-        .tx_pin_function = _UART##_TX_PIN, .rx_pin_function = _UART##_RX_PIN,     \
-        .cts_pin_function = _UART##_CTS_PIN, .rts_pin_function = _UART##_RTS_PIN, \
+#define UART_ID(IDX)                                                                      \
+    {                                                                                     \
+        .index = IDX,                                                                     \
+        .register_p = (UART_TypeDef*)UART##IDX##_REG_BASE,                                \
+        .rcc_periph = RCC_PERIPH(UART##IDX), .irq_channel = UART##IDX##_IRQn,             \
+        .tx_pin_function = UART##IDX##_TX_PIN, .rx_pin_function = UART##IDX##_RX_PIN,     \
+        .cts_pin_function = UART##IDX##_CTS_PIN, .rts_pin_function = UART##IDX##_RTS_PIN, \
     }
-
-#define UART_ID(_UART) UART_ID_hlp(_UART)
 
 typedef enum {
     UART0_TX_PIN = UART0_TX,
@@ -45,6 +44,7 @@ typedef enum {
 } uart_pin_function_t;
 
 typedef struct {
+    const uint8_t index;
     UART_TypeDef* register_p;
     const rcc_periph_t rcc_periph;
     const IRQn_Type irq_channel;
