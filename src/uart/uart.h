@@ -15,15 +15,6 @@
 #ifndef _UART_H
 #define _UART_H
 
-#define UART_ID(IDX)                                                                      \
-    {                                                                                     \
-        .index = IDX,                                                                     \
-        .register_p = (UART_TypeDef*)UART##IDX##_REG_BASE,                                \
-        .rcc_periph = RCC_PERIPH(UART##IDX), .irq_channel = UART##IDX##_IRQn,             \
-        .tx_pin_function = UART##IDX##_TX_PIN, .rx_pin_function = UART##IDX##_RX_PIN,     \
-        .cts_pin_function = UART##IDX##_CTS_PIN, .rts_pin_function = UART##IDX##_RTS_PIN, \
-    }
-
 typedef enum {
     UART0_TX_PIN = UART0_TX,
     UART0_RX_PIN = UART0_RX,
@@ -49,7 +40,16 @@ typedef struct {
     const rcc_periph_t rcc_periph;
     const IRQn_Type irq_channel;
     const uart_pin_function_t tx_pin_function, rx_pin_function, cts_pin_function, rts_pin_function;
-} uart_id_t;
+} uart_instance_t;
+
+#define UART_INSTANCE(INDEX)                                                                    \
+    {                                                                                           \
+        .index = INDEX,                                                                         \
+        .register_p = (UART_TypeDef*)UART##INDEX##_REG_BASE,                                    \
+        .rcc_periph = RCC_PERIPH(UART##INDEX), .irq_channel = UART##INDEX##_IRQn,               \
+        .tx_pin_function = UART##INDEX##_TX_PIN, .rx_pin_function = UART##INDEX##_RX_PIN,       \
+        .cts_pin_function = UART##INDEX##_CTS_PIN, .rts_pin_function = UART##INDEX##_RTS_PIN,   \
+    }
 
 typedef enum {
     NO_PARTY = UART_PARITY_NO_PARTY,
@@ -87,7 +87,7 @@ typedef enum {
 } uart_idle_time_t;
 
 typedef struct s_uart_t {
-    const uart_id_t id;
+    const uart_instance_t instance;
     const uint8_t tx_pad, rx_pad;
     const uart_parity_t parity;
     const uart_stop_bits_t stop_bits;

@@ -22,7 +22,7 @@ void rx_cb(uart_t* uart_p);
 char rx_buf[256], tx_buf[256];
 
 uart_t uart = {
-    .id = UART_ID(0),
+    .instance = UART_INSTANCE(0),
     .tx_pad = BOARD_TX_PAD,
     .rx_pad = BOARD_RX_PAD,
     .parity = NO_PARTY,
