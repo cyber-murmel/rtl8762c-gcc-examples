@@ -42,13 +42,13 @@ typedef struct {
     const uart_pin_function_t tx_pin_function, rx_pin_function, cts_pin_function, rts_pin_function;
 } uart_instance_t;
 
-#define UART_INSTANCE(INDEX)                                                                    \
-    {                                                                                           \
-        .index = INDEX,                                                                         \
-        .register_p = (UART_TypeDef*)UART##INDEX##_REG_BASE,                                    \
-        .rcc_periph = RCC_PERIPH(UART##INDEX), .irq_channel = UART##INDEX##_IRQn,               \
-        .tx_pin_function = UART##INDEX##_TX_PIN, .rx_pin_function = UART##INDEX##_RX_PIN,       \
-        .cts_pin_function = UART##INDEX##_CTS_PIN, .rts_pin_function = UART##INDEX##_RTS_PIN,   \
+#define UART_INSTANCE(INDEX)                                                                  \
+    {                                                                                         \
+        .index = INDEX,                                                                       \
+        .register_p = (UART_TypeDef*)UART##INDEX##_REG_BASE,                                  \
+        .rcc_periph = RCC_PERIPH(UART##INDEX), .irq_channel = UART##INDEX##_IRQn,             \
+        .tx_pin_function = UART##INDEX##_TX_PIN, .rx_pin_function = UART##INDEX##_RX_PIN,     \
+        .cts_pin_function = UART##INDEX##_CTS_PIN, .rts_pin_function = UART##INDEX##_RTS_PIN, \
     }
 
 typedef enum {

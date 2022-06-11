@@ -174,7 +174,7 @@ static void _genericUARTHandler(int index)
 /* attach generic handler to all possible uarts */
 #define UART_HANDLER(INDEX)          \
     void UART##INDEX##_Handler(void) \
-    {                              \
+    {                                \
         _genericUARTHandler(INDEX);  \
     }
 
