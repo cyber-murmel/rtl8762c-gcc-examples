@@ -152,14 +152,40 @@ backup-$(BOARD).bin: | $(BUILD)
 $(BUILD):
 	$(Q)$(MKDIR) -p $@
 
+debug_pico: $(BUILD)/firmware.elf
+	$(Q)$(GDB) $< \
+		$(addprefix --directory ,$(DIRS)) \
+		-ex "target extended-remote | openocd -c 'log_output openocd.log' \
+			-f interface/cmsis-dap.cfg \
+			-c 'transport select swd' \
+			-f debug/rtl8762c.cfg \
+			-f debug/gdb.cfg" \
+		-ex 'monitor halt'
+.PHONY: debug_pico
+
 debug_ftdi: $(BUILD)/firmware.elf
 	$(Q)$(GDB) $< \
 		$(addprefix --directory ,$(DIRS)) \
-		-ex "target extended-remote | openocd -c 'log_output openocd.log' -f debug/ftdi/$(FTDI_VERSION).cfg -c 'ftdi_channel $(FTDI_SWD_CHANNEL)' -f debug/ftdi/swd.cfg -f debug/rtl8762c.cfg" \
+		-ex "target extended-remote | openocd -c 'log_output openocd.log' \
+			-f debug/ftdi/$(FTDI_VERSION).cfg \
+			-c 'ftdi_channel $(FTDI_SWD_CHANNEL)' \
+			-f debug/ftdi/swd.cfg \
+			-f debug/rtl8762c.cfg" \
+			-f debug/gdb.cfg" \
 		-ex 'monitor reset halt' \
 		-ex 'break main' \
 		-ex 'continue'
 .PHONY: debug_ftdi
+
+debug_stlink: $(BUILD)/firmware.elf
+	$(Q)$(GDB) $< \
+		$(addprefix --directory ,$(DIRS)) \
+		-ex "target extended-remote | openocd -c 'log_output openocd.log' \
+			-f interface/stlink.cfg \
+			-f debug/rtl8762c.cfg \
+			-f debug/gdb.cfg" \
+		-ex 'monitor halt'
+.PHONY: debug_stlink
 
 flash: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(FSBL) $(BUILD)/firmware.bin
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash \
