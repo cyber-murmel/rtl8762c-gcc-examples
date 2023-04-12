@@ -1,4 +1,4 @@
-BOARD ?= FT10
+BOARD ?= EMB1082
 BOARD_DIR ?= boards/$(BOARD)
 TARGET ?= 00-blink
 TARGET_DIR ?= ./src/targets/$(TARGET)
