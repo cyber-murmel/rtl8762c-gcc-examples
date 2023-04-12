@@ -4,9 +4,22 @@ Firmware examples for the RTL8762C BLE SoC
 [![hackaday.io](https://img.shields.io/badge/hackaday-io-gold.svg)](https://hackaday.io/project/182205-py-ft10)
 
 ## Download
-To download all necessary sources and tools, clone this repository recursively.
+To obtain this code, clone this repository recursively.
 ```shell
 git clone --recurse-submodules https://github.com/cyber-murmel/rtl8762c-gcc-examples.git
+```
+
+### SDK
+Register an account at [RealMCU](https://www.realmcu.com) and download the
+*RTL8762C SDK GCC(ZIP)* from the [product page](https://www.realmcu.com/en/Home/Product/93cc0582-3a3f-4ea8-82ea-76c6504e478a).
+This procedure requires an email account.
+
+Extract the zip archive and move the `sdk` directory into the root of this repository.
+
+```shell
+unzip RTL8762C-sdk-gcc-v0.0.5.zip
+mv bee2-sdk-gcc-v0.0.5/sdk ./sdk
+rm -r bee2-sdk-gcc-v0.0.5
 ```
 
 ## Toolchain
@@ -15,7 +28,8 @@ To build the firmware you need
 - arm-none-eabi-gcc (GNU Arm Embedded Toolchain 9-2020-q2-update) 9.3.1 20200408 (release)
 
 ### rtltool
-For flashing you need to install the dependencies for  [rtltool](https://github.com/cyber-murmel/rtltool/blob/main/README.md#python-modules).
+For flashing you need to download and install the dependencies for the rtltool submodule.
+Please follow the [installtion section](https://github.com/cyber-murmel/rtltool/blob/main/README.md#installation).
 
 ### Nix
 Users of Nix or NixOS can simply run `nix-shell` to enter an environment with all necessary dependencies.

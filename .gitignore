@@ -58,3 +58,7 @@ openocd.log
 
 # IDE Specific
 .vscode/
+
+# SDK Archive
+*.zip
+/sdk/

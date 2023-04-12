@@ -19,7 +19,6 @@ CROSS_COMPILE ?= arm-none-eabi-
 DIRS = $(sort \
 	./ \
 	./src/ \
-	./inc/ \
 	./config/ \
 	$(BUILD) \
 	$(BOARD_DIR) \
@@ -62,18 +61,18 @@ CXXFLAGS += $(CXXFLAGS_MOD)
 LDFLAGS += $(LDFLAGS_MOD)
 
 LIBS = -lc -lm -lnosys sdk/bin/rom_symbol_gcc.axf \
-	sdk/bin/ADPCM.lib \
 	sdk/bin/auto_k_rf_bonding_lib_DUT.lib \
+	sdk/bin/auto_k_rf_bonding_lib_golden.lib \
 	sdk/bin/auto_k_rf.lib \
 	sdk/bin/bee2_adc_lib.lib \
 	sdk/bin/bee2_sdk.lib \
+	sdk/bin/electric_rtk_public_meter.lib \
 	sdk/bin/gap_bt5.lib \
 	sdk/bin/gap_utils.lib \
 	sdk/bin/ima_adpcm_lib.lib \
 	sdk/bin/msbc_lib.lib \
 	sdk/bin/opus_celt_enc_lib.lib \
 	sdk/bin/sbc_lib.lib \
-	sdk/bin/sbc_lib_o3.lib \
 	sdk/bin/system_trace.lib \
 
 # Source Files
@@ -94,6 +93,10 @@ OBJ += $(addprefix $(BUILD)/, $(SRC_S:.s=.o))
 
 OEM_CONFIG ?= $(BUILD)/oem_config.bin
 OTA_BANK0_HEADER ?= $(BUILD)/ota_bank0_header.bin
+
+# vendor binaries
+FSBL_VENDOR ?= fsbl_MP_master\#\#_1.1.4.0_c6f6dbf5-6d099f4054016ab6d562698d14e662e9.bin
+PATCH_VENDOR ?= Patch_MP_release\#_1.0.611.1_130fa89-1c796670a5129533908722a146121972.bin
 FSBL ?= $(BUILD)/fsbl.bin
 PATCH ?= $(BUILD)/patch.bin
 
@@ -136,12 +139,11 @@ $(BUILD)/ota_bank0_header.bin: $(BUILD)/ota_bank0_header.o
 $(BUILD)/ota_bank0_header.o: config/ota_bank0_header.c | $(BUILD)
 	$(Q)$(CC) -c -Wno-override-init $(CFLAGS) $< -o $@
 
-$(BUILD)/fsbl.bin: sdk/tool/download/fsbl_MP_master\#\#_1.1.2.0_99b57f16-3e14e3bf53eb7ed34098cbae7dd01680.bin | $(BUILD)
+$(BUILD)/fsbl.bin: $(FSBL_VENDOR) | $(BUILD)
 	$(Q)$(DD) if=$< bs=1 skip=512 of=$@
 
-$(BUILD)/patch.bin: | $(BUILD)
-	$(ECHO) reading back patch binary from device at hand
-	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) read_flash 0x00803000 0x0000A000 $@
+$(BUILD)/patch.bin: $(PATCH_VENDOR) | $(BUILD)
+	$(Q)$(DD) if=$< bs=1 skip=512 of=$@
 
 backup-$(BOARD).bin: | $(BUILD)
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) read_flash 0x00801000 $(FLASH_SIZE) $@
@@ -163,7 +165,6 @@ flash: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(FSBL) $(BUILD)/firmware.bin
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash \
 		0x00801000 $(OEM_CONFIG) \
 		0x00802000 $(OTA_BANK0_HEADER) \
-		0x0080D000 $(FSBL) \
 		0x0080E000 $(BUILD)/firmware.bin
 .PHONY: flash
 
