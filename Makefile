@@ -187,7 +187,7 @@ debug_stlink: $(BUILD)/firmware.elf
 		-ex 'monitor halt'
 .PHONY: debug_stlink
 
-flash: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(FSBL) $(BUILD)/firmware.bin
+flash: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(BUILD)/firmware.bin
 	$(Q)$(PYTHON) tools/rtltool/rtltool.py --port $(PORT) write_flash \
 		0x00801000 $(OEM_CONFIG) \
 		0x00802000 $(OTA_BANK0_HEADER) \
