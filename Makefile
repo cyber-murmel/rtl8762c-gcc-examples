@@ -206,7 +206,7 @@ playback: backup-$(BOARD).bin
 .PHONY: playback
 
 term:
-	python3 -m serial.tools.miniterm --exit-char 24 --rts 0 --dtr 0 $(PORT) 115200
+	python3 -m serial.tools.miniterm --exit-char 24 --rts 0 $(PORT) 115200
 .PHONY: term
 
 format:
