@@ -5,7 +5,7 @@
 #define _PIN_H
 
 #define PIN_ID(PAD)                                                       \
-    {                                                                     \
+    ((pin_id_t) {                                                         \
         .pad = PAD,                                                       \
         .bit = ((PAD <= P3_6)                                             \
                 ? BIT(PAD)                                                \
@@ -14,7 +14,7 @@
                         : (((PAD == H_0) || (PAD == H_1) || (PAD == H_2)) \
                                 ? BIT(PAD - 11)                           \
                                 : 0xFF))),                                \
-    }
+    })
 
 typedef struct {
     const uint8_t pad;
@@ -33,14 +33,20 @@ typedef enum {
 } pin_pull_t;
 
 typedef enum {
-    PINMUX_MODE = PAD_PINMUX_MODE,
+    WEAK_PULL = PAD_WEAK_PULL,
+    STRONG_PULL = PAD_STRONG_PULL,
+} pin_pull_config_t;
+
+typedef enum {
     SW_MODE = PAD_SW_MODE,
+    PINMUX_MODE = PAD_PINMUX_MODE,
 } pin_mode_t;
 
 typedef struct {
-    const pin_id_t id;
+    const pin_id_t* id;
     pin_direction_t direction;
     pin_pull_t pull;
+    pin_pull_config_t pull_config;
     pin_mode_t mode;
     bool value;
 } pin_t;

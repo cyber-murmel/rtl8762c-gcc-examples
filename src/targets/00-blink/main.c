@@ -4,13 +4,14 @@
 #include "pin/pin.h"
 
 // prevent `warning: function with qualified void return type called`
-#define delay_ms(T) (((void (*)(uint32_t)) platform_delay_ms)(T))
+#define delay_ms(T) (((void (*)(uint32_t))platform_delay_ms)(T))
 
 int main(void)
 {
     pin_t led_pin = {
-        .id = PIN_ID(LED_PAD),
+        .id = &PIN_ID(LED_PAD),
         .direction = OUT,
+        .mode = PAD_PINMUX_MODE,
     };
 
     pins_init();
