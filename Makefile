@@ -210,7 +210,7 @@ term:
 .PHONY: term
 
 format:
-	find src/ -name '*.[ch]' -exec clang-format -i -style=WebKit {} +
+	find src/ boards/ -name '*.[ch]' -exec clang-format -i -style=WebKit {} +
 .PHONY: format
 
 include ./mkrules.mk
