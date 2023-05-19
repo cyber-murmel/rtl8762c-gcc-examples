@@ -8,18 +8,14 @@
 
 int main(void)
 {
-    pin_t led_pin = {
-        .id = &PIN_ID(LED_PAD),
-        .direction = OUT,
-        .mode = PAD_PINMUX_MODE,
-    };
+    pin_t* led_pin_p = &PIN_OUT(PIN_ID(LED_PAD));
 
     pins_init();
 
-    pin_init(&led_pin);
+    pin_init(led_pin_p);
 
     while (1) {
-        pin_set(&led_pin, !pin_get(&led_pin));
+        pin_set(led_pin_p, !pin_get(led_pin_p));
         delay_ms(1000);
     }
 }
