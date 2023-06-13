@@ -85,6 +85,7 @@ SRC_C += \
 	sdk/src/mcu/peripheral/rtl876x_rcc.c \
 	sdk/src/mcu/peripheral/rtl876x_gpio.c \
 	sdk/src/mcu/peripheral/rtl876x_uart.c \
+	sdk/src/mcu/peripheral/rtl876x_i2c.c \
 	sdk/src/ble/privacy/privacy_mgnt.c \
 
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
@@ -206,7 +207,7 @@ playback: backup-$(BOARD).bin
 .PHONY: playback
 
 term:
-	python3 -m serial.tools.miniterm --exit-char 24 --rts 0 $(PORT) 115200
+	python3 -m serial.tools.miniterm --raw --exit-char 24 --rts 0 $(PORT) 115200
 .PHONY: term
 
 format:

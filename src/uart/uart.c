@@ -20,23 +20,17 @@ static uart_t* uarts[NUM_UARTS];
 
 bool uart_init(uart_t* uart_p)
 {
-    uarts[uart_p->instance.index] = uart_p;
+    uarts[uart_p->instance_p->index] = uart_p;
 
     if (true != os_mutex_create(&(uart_p->mutex_p))) {
         // the mutex was not created successfully
         return false;
     }
 
-    Pad_Config(uart_p->tx_pad, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP,
-        PAD_OUT_DISABLE, PAD_OUT_HIGH);
-    Pad_Config(uart_p->rx_pad, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP,
-        PAD_OUT_DISABLE, PAD_OUT_HIGH);
-
-    Pinmux_Config(uart_p->tx_pad, uart_p->instance.tx_pin_function);
-    Pinmux_Config(uart_p->rx_pad, uart_p->instance.rx_pin_function);
+    uart_pinmux(uart_p);
 
     // initialize UART
-    rcc_periph_set(&(uart_p->instance.rcc_periph), ENABLE);
+    rcc_periph_set(&(uart_p->instance_p->rcc_periph), ENABLE);
 
     /* uart init */
     UART_InitTypeDef UART_InitStruct;
@@ -48,25 +42,42 @@ bool uart_init(uart_t* uart_p)
     UART_InitStruct.rxTriggerLevel = uart_p->rx_trigger_level;
     UART_InitStruct.idle_time = uart_p->idle_time;
 
-    UART_Init(uart_p->instance.register_p, &UART_InitStruct);
+    UART_Init(uart_p->instance_p->register_p, &UART_InitStruct);
 
-    // enable rx interrupt and line status interrupt
-    UART_INTConfig(UART, UART_INT_RD_AVA, ENABLE);
-    UART_INTConfig(UART, UART_INT_IDLE, ENABLE);
+    if ((0 <= uart_p->pads.rx) && (uart_p->pads.rx < TOTAL_PIN_NUM)) {
+        // enable rx interrupt and line status interrupt
+        UART_INTConfig(UART, UART_INT_RD_AVA, ENABLE);
+        UART_INTConfig(UART, UART_INT_IDLE, ENABLE);
 
-    /*  Enable UART IRQ  */
-    NVIC_InitTypeDef NVIC_InitStruct;
-    NVIC_InitStruct.NVIC_IRQChannel = uart_p->instance.irq_channel;
-    NVIC_InitStruct.NVIC_IRQChannelCmd = (FunctionalState)ENABLE;
-    NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
-    NVIC_Init(&NVIC_InitStruct);
+        /*  Enable UART IRQ  */
+        NVIC_InitTypeDef NVIC_InitStruct;
+        NVIC_InitStruct.NVIC_IRQChannel = uart_p->instance_p->irq_channel;
+        NVIC_InitStruct.NVIC_IRQChannelCmd = (FunctionalState)ENABLE;
+        NVIC_InitStruct.NVIC_IRQChannelPriority = 3;
+        NVIC_Init(&NVIC_InitStruct);
+    }
 
     return true;
 }
 
+void uart_pinmux(uart_t* uart_p)
+{
+    if ((0 <= uart_p->pads.tx) && (uart_p->pads.tx < TOTAL_PIN_NUM)) {
+        Pad_Config(uart_p->pads.tx, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP,
+            PAD_OUT_DISABLE, PAD_OUT_HIGH);
+        Pinmux_Config(uart_p->pads.tx, uart_p->instance_p->tx_pin_function);
+    }
+
+    if ((0 <= uart_p->pads.rx) && (uart_p->pads.rx < TOTAL_PIN_NUM)) {
+        Pad_Config(uart_p->pads.rx, PAD_PINMUX_MODE, PAD_IS_PWRON, PAD_PULL_UP,
+            PAD_OUT_DISABLE, PAD_OUT_HIGH);
+        Pinmux_Config(uart_p->pads.rx, uart_p->instance_p->rx_pin_function);
+    }
+}
+
 void uart_flush(const uart_t* uart_p)
 {
-    while (UART_GetFlagState(uart_p->instance.register_p,
+    while (UART_GetFlagState(uart_p->instance_p->register_p,
                UART_FLAG_THR_TSR_EMPTY)
         != SET)
         ;
@@ -83,13 +94,13 @@ bool uart_printn(const uart_t* uart_p, const char* str, size_t vCount)
 
     /* send block bytes(16 bytes) */
     for (i = 0; i < (vCount / UART_TX_FIFO_SIZE); i++) {
-        UART_SendData(uart_p->instance.register_p, (const uint8_t*)str + (UART_TX_FIFO_SIZE * i), UART_TX_FIFO_SIZE);
+        UART_SendData(uart_p->instance_p->register_p, (const uint8_t*)str + (UART_TX_FIFO_SIZE * i), UART_TX_FIFO_SIZE);
         /* wait tx fifo empty */
         uart_flush(uart_p);
     }
 
     /* send left bytes */
-    UART_SendData(uart_p->instance.register_p, (const uint8_t*)str + (UART_TX_FIFO_SIZE * i), vCount % UART_TX_FIFO_SIZE);
+    UART_SendData(uart_p->instance_p->register_p, (const uint8_t*)str + (UART_TX_FIFO_SIZE * i), vCount % UART_TX_FIFO_SIZE);
 
     os_mutex_give(uart_p->mutex_p);
 
@@ -122,7 +133,7 @@ static void _genericUARTHandler(int index)
         return;
     }
 
-    UART_TypeDef* Register_p = uart_p->instance.register_p;
+    UART_TypeDef* Register_p = uart_p->instance_p->register_p;
     uint16_t rx_len = 0;
     /* diable interrups globally to prevent cascades */
     __disable_irq();

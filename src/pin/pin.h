@@ -9,7 +9,7 @@ typedef struct {
     const uint8_t pad;
     const uint32_t bit;
     const IRQn_Type irq;
-} pin_id_t;
+} pin_instance_t;
 
 typedef enum {
     IN = PAD_OUT_DISABLE,
@@ -57,20 +57,20 @@ typedef struct {
 } pin_interrupt_t;
 
 typedef struct {
-    const pin_id_t* id;
-    const IRQn_Type irq;
+    const pin_instance_t* instance_p;
     pin_direction_t direction;
     pin_pull_t pull;
     pin_pull_config_t pull_config;
     pin_mode_t mode;
     bool value;
-    pin_interrupt_t* interrupt;
-    // bool interrupt_enable;
+    pin_interrupt_t* interrupt_p;
 } pin_t;
 
-typedef void (*pin_interrupt_handler_t)(pin_id_t* id, bool state, uint32_t tick);
+typedef void (*pin_interrupt_handler_t)(const uint8_t pad, bool state, uint32_t tick);
 
 extern pin_t all_pins[];
+
+extern const pin_instance_t pin_instances[TOTAL_PIN_NUM];
 
 #define IRQn_hlp(PAD) GPIO##PAD##_IRQn
 #define IRQn(PAD) IRQn_hlp(PAD)
@@ -84,51 +84,52 @@ extern pin_t all_pins[];
                             ? BIT(PAD - 11)                           \
                             : 0xFF)))
 
-#define PIN_ID(PAD)           \
-    ((pin_id_t) {             \
+#define PIN_INSTANCE(PAD)     \
+    ((pin_instance_t) {       \
         .pad = PAD,           \
         .bit = GPIO_BIT(PAD), \
     })
 
-#define PIN_ID_IRQ(PAD)       \
-    ((pin_id_t) {             \
+#define PIN_INSTANCE_IRQ(PAD) \
+    ((pin_instance_t) {       \
         .pad = PAD,           \
         .bit = GPIO_BIT(PAD), \
         .irq = IRQn(PAD) })
 
-#define PIN_OUT(ID)       \
-    ((pin_t) {            \
-        .id = &ID,        \
-        .mode = SW_MODE,  \
-        .direction = OUT, \
+#define PIN_OUT(INSTANCE_P)       \
+    ((pin_t) {                    \
+        .instance_p = INSTANCE_P, \
+        .mode = SW_MODE,          \
+        .direction = OUT,         \
     })
 
-#define PIN_IN(ID)                  \
+#define PIN_IN(INSTANCE_P)          \
     ((pin_t) {                      \
-        .id = &ID,                  \
+        .instance_p = INSTANCE_P,   \
         .mode = PINMUX_MODE,        \
         .direction = IN,            \
         .pull = PULL_UP,            \
         .pull_config = STRONG_PULL, \
     })
 
-#define PIN_IN_IRQ(ID)                     \
-    ((pin_t) {                             \
-        .id = &ID,                         \
-        .mode = PINMUX_MODE,               \
-        .direction = IN,                   \
-        .pull = PULL_UP,                   \
-        .pull_config = STRONG_PULL,        \
-        .interrupt = &((pin_interrupt_t) { \
-            .level_type = EDGE,            \
-            .polarity = LOW,               \
-            .debounce = DEBOUNCE_ENABLE,   \
-            .debounce_time_ms = 10,        \
-        }),                                \
+#define PIN_IN_IRQ(INSTANCE_P)               \
+    ((pin_t) {                               \
+        .instance_p = INSTANCE_P,            \
+        .mode = PINMUX_MODE,                 \
+        .direction = IN,                     \
+        .pull = PULL_UP,                     \
+        .pull_config = STRONG_PULL,          \
+        .interrupt_p = &((pin_interrupt_t) { \
+            .level_type = EDGE,              \
+            .polarity = LOW,                 \
+            .debounce = DEBOUNCE_ENABLE,     \
+            .debounce_time_ms = 10,          \
+        }),                                  \
     })
 
 void pins_init();
 void pin_init(pin_t* pin_p);
+void pin_deinit(pin_t* pin_p);
 void pin_configure_output(pin_t* pin_p);
 void pin_configure_input(pin_t* pin_p);
 void pin_configure_input_interrupt(pin_t* pin_p);

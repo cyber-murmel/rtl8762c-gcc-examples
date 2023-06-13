@@ -42,14 +42,22 @@ typedef struct {
     const uart_pin_function_t tx_pin_function, rx_pin_function, cts_pin_function, rts_pin_function;
 } uart_instance_t;
 
-#define UART_INSTANCE(INDEX)                                                                  \
-    {                                                                                         \
-        .index = INDEX,                                                                       \
-        .register_p = (UART_TypeDef*)UART##INDEX##_REG_BASE,                                  \
-        .rcc_periph = RCC_PERIPH(UART##INDEX), .irq_channel = UART##INDEX##_IRQn,             \
-        .tx_pin_function = UART##INDEX##_TX_PIN, .rx_pin_function = UART##INDEX##_RX_PIN,     \
-        .cts_pin_function = UART##INDEX##_CTS_PIN, .rts_pin_function = UART##INDEX##_RTS_PIN, \
-    }
+#define UART_INSTANCE(INDEX)                                 \
+    ((uart_instance_t) {                                     \
+        .index = INDEX,                                      \
+        .register_p = (UART_TypeDef*)UART##INDEX##_REG_BASE, \
+        .rcc_periph = RCC_PERIPH(UART##INDEX),               \
+        .irq_channel = UART##INDEX##_IRQn,                   \
+        .tx_pin_function = UART##INDEX##_TX_PIN,             \
+        .rx_pin_function = UART##INDEX##_RX_PIN,             \
+        .cts_pin_function = UART##INDEX##_CTS_PIN,           \
+        .rts_pin_function = UART##INDEX##_RTS_PIN,           \
+    })
+
+typedef struct {
+    uint8_t tx;
+    uint8_t rx;
+} uart_pads_t;
 
 typedef enum {
     NO_PARTY = UART_PARITY_NO_PARTY,
@@ -87,13 +95,13 @@ typedef enum {
 } uart_idle_time_t;
 
 typedef struct s_uart_t {
-    const uart_instance_t instance;
-    const uint8_t tx_pad, rx_pad;
-    const uart_parity_t parity;
-    const uart_stop_bits_t stop_bits;
-    const uart_word_length_t word_length;
-    const uint8_t rx_trigger_level; // 1 to 29
-    const uart_idle_time_t idle_time;
+    const uart_instance_t* instance_p;
+    uart_pads_t pads;
+    uart_parity_t parity;
+    uart_stop_bits_t stop_bits;
+    uart_word_length_t word_length;
+    uint8_t rx_trigger_level; // 1 to 29
+    uart_idle_time_t idle_time;
     struct {
         const size_t size;
         size_t count;
@@ -108,6 +116,7 @@ typedef struct s_uart_t {
 } uart_t;
 
 bool uart_init(uart_t* uart_p);
+void uart_pinmux(uart_t* uart_p);
 void uart_flush(const uart_t* uart_p);
 bool uart_printn(const uart_t* uart_p, const char* pSend_Buf, size_t vCount);
 #define uart_print(_UART, STR) uart_printn(_UART, STR, strlen(STR))

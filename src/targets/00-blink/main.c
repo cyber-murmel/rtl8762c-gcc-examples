@@ -8,7 +8,7 @@
 
 int main(void)
 {
-    pin_t* led_pin_p = &PIN_OUT(PIN_ID(LED_PAD));
+    pin_t* led_pin_p = &PIN_OUT(&PIN_INSTANCE(LED_PAD));
 
     pins_init();
 

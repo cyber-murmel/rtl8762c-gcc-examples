@@ -1,4 +1,4 @@
 FLASH_SIZE = 0x00080000 # 512 kiB
 FIRMWARE_SIZE = 0x00019000 # 100 kiB
 
-PORT ?= /dev/ttyUSB1
+PORT ?= /dev/ttyACM0
