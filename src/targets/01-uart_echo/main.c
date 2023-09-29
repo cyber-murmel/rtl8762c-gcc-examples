@@ -27,6 +27,7 @@ uart_t uart = {
         .tx = BOARD_TX_PAD,
         .rx = BOARD_RX_PAD,
     },
+    .baudrate = 115200,
     .parity = NO_PARTY,
     .stop_bits = STOP_BITS_1,
     .word_length = WORD_LENGTH_8,
