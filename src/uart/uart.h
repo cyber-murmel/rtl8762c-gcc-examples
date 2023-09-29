@@ -97,6 +97,7 @@ typedef enum {
 typedef struct s_uart_t {
     const uart_instance_t* instance_p;
     uart_pads_t pads;
+    uint32_t baudrate; //default: 115200 set by UART_StructInit()
     uart_parity_t parity;
     uart_stop_bits_t stop_bits;
     uart_word_length_t word_length;
