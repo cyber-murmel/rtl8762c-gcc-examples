@@ -15,6 +15,18 @@ include $(BOARD_DIR)/board_config.mk
 PORT ?= /dev/ttyUSB1
 
 CROSS_COMPILE ?= arm-none-eabi-
+ifdef GCC_PATH
+CC = $(GCC_PATH)/$(CROSS_COMPILE)gcc
+AS = $(GCC_PATH)/$(CROSS_COMPILE)gcc -x assembler-with-cpp -c
+# CP = $(GCC_PATH)/$(CROSS_COMPILE)objcopy
+SZ = $(GCC_PATH)/$(CROSS_COMPILE)size
+else
+CC = $(CROSS_COMPILE)gcc
+AS = $(CROSS_COMPILE)gcc -x assembler-with-cpp -c
+# CP = $(CROSS_COMPILE)objcopy
+SZ = $(CROSS_COMPILE)size
+OD = $(CROSS_COMPILE)objdump
+endif
 
 DIRS = $(sort \
 	./ \
