@@ -8,6 +8,7 @@ APP_DATA_ON (rwx)   : ORIGIN = 0x00207C00, LENGTH = APP_GLOBAL_SIZE
 HEAP_DATA_ON (rwx)  : ORIGIN = (0x00207C00 + APP_GLOBAL_SIZE) , LENGTH = (65*1024) - APP_GLOBAL_SIZE
 CACHE_DATA_ON (rwx)   : ORIGIN = 0x0021C000, LENGTH = SHARE_CACHE_RAM_SIZE
 APP_FLASH (r)   : ORIGIN = APP_ADDR, LENGTH = APP_SIZE
+APP_TRACE (r): ORIGIN = 0x08800000, LENGTH = 4096k
 UNINIT_RAM : ORIGIN = 0x00217f00, LENGTH = 256
 }
 
@@ -97,4 +98,9 @@ SECTIONS
     }>CACHE_DATA_ON AT> APP_FLASH
     __cache_dataon_length__ = __cache_dataon_end__ - __cache_dataon_start__;
     __cache_data_load_ad__ = LOADADDR(RAM_DATA_ON);
+    
+    App.trace 0x08800000: 
+    {
+        *(.TRACE*)
+    }>APP_TRACE
 }
