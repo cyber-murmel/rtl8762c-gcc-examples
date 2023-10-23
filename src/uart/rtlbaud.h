@@ -3,9 +3,9 @@
 
 // by wuwbobo2021 <https://github.com/wuwbobo2021>, <wuwbobo@outlook.com>
 // inspired by RTL8195A UART baudrate calculation code in sdk-ameba-v4.0b-gcc,
-// and measurements from the oscilloscope. free for any proper usage, but without warranty.
+// and measurements from the oscilloscope.
 
-// Date: 2023-09-26
+// Date: 2023-10-21
 
 #ifndef RTLBAUD_H
 #define RTLBAUD_H
@@ -29,7 +29,7 @@ typedef struct {
 
 	// set by user
 	uint32_t baud_target;
-	float max_err_percent;
+	double max_err_percent;
 } Rtl_Uart_BaudRate_Config;
 
 #define T_CLK (1.0/(20*1000*1000))
@@ -50,7 +50,7 @@ static bool rtl_baud_calc(Rtl_Uart_BaudRate_Config* conf)
 		if (floor(div_tmp) > UINT16_MAX) continue;
 
 		uint16_t div = floor(div_tmp);
-		float t_clk_divided = T_CLK*div;
+		double t_clk_divided = T_CLK*div;
 		double t_baud_err = t_baud_target - t_clk_divided*ovsr_actual;
 		double t_adj_unit = t_clk_divided / 2.0 / 9.0;
 		uint16_t adj_bits = round(t_baud_err / t_adj_unit);
@@ -59,8 +59,8 @@ static bool rtl_baud_calc(Rtl_Uart_BaudRate_Config* conf)
 		dbg_print_args("t_baud_err: %f us  t_adj_unit: %f us \n",
 			t_baud_err*1000.0*1000.0, t_adj_unit*1000.0*1000.0);
 
-		float t_baud_actual = t_clk_divided*ovsr_actual + t_adj_unit*adj_bits;
-		float err_percent = 100.0 * fabs(t_baud_actual - t_baud_target)
+		double t_baud_actual = t_clk_divided*ovsr_actual + t_adj_unit*adj_bits;
+		double err_percent = 100.0 * fabs(t_baud_actual - t_baud_target)
 		                          / t_baud_target;
 		if (err_percent > conf->max_err_percent) continue;
 
@@ -90,7 +90,7 @@ static Rtl_Uart_BaudRate_Config rtl_baud_auto_calc(uint32_t baud)
 	conf.is_valid = false;
 	if (baud < 50) return conf;
 
-	for (float err_per = 1.0; err_per <= 5.0; err_per += 0.5) {
+	for (double err_per = 1.0; err_per <= 5.0; err_per += 0.5) {
 		conf.baud_target = baud;
 		conf.max_err_percent = err_per;
 		if (rtl_baud_calc(&conf)) return conf;
