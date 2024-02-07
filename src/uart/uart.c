@@ -6,13 +6,17 @@
  *
  */
 
+// modified by wuwbobo2021 (2023-9-29)
+
 #include <os_msg.h>
 #include <os_sync.h>
 #include <rtl876x_nvic.h>
 #include <rtl876x_pinmux.h>
 
 #include "rcc/rcc.h"
+#include "rtlbaud.h"
 #include "uart/uart.h"
+#include "uart/rtlbaud.h"
 
 #define NUM_UARTS (3)
 
@@ -35,6 +39,14 @@ bool uart_init(uart_t* uart_p)
     /* uart init */
     UART_InitTypeDef UART_InitStruct;
     UART_StructInit(&UART_InitStruct);
+
+    Rtl_Uart_BaudRate_Config baud_conf;
+    baud_conf = rtl_baud_auto_calc(uart_p->baudrate);
+    if (baud_conf.is_valid) {
+        UART_InitStruct.div = baud_conf.div;
+        UART_InitStruct.ovsr = baud_conf.ovsr;
+        UART_InitStruct.ovsr_adj = baud_conf.ovsr_adj;
+    }
 
     UART_InitStruct.parity = uart_p->parity;
     UART_InitStruct.stopBits = uart_p->stop_bits;

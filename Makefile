@@ -1,3 +1,4 @@
+SDK_DIR ?= sdk
 BOARD ?= EMB1082
 BOARD_DIR ?= boards/$(BOARD)
 TARGET ?= 00-blink
@@ -15,6 +16,18 @@ include $(BOARD_DIR)/board_config.mk
 PORT ?= /dev/ttyUSB1
 
 CROSS_COMPILE ?= arm-none-eabi-
+ifdef GCC_PATH
+CC = $(GCC_PATH)/$(CROSS_COMPILE)gcc
+AS = $(GCC_PATH)/$(CROSS_COMPILE)gcc -x assembler-with-cpp -c
+# CP = $(GCC_PATH)/$(CROSS_COMPILE)objcopy
+SZ = $(GCC_PATH)/$(CROSS_COMPILE)size
+else
+CC = $(CROSS_COMPILE)gcc
+AS = $(CROSS_COMPILE)gcc -x assembler-with-cpp -c
+# CP = $(CROSS_COMPILE)objcopy
+SZ = $(CROSS_COMPILE)size
+OD = $(CROSS_COMPILE)objdump
+endif
 
 DIRS = $(sort \
 	./ \
@@ -23,17 +36,17 @@ DIRS = $(sort \
 	$(BUILD) \
 	$(BOARD_DIR) \
 	$(TARGET_DIR)/ \
-	sdk/inc/ \
-	sdk/inc/platform/ \
-	sdk/inc/platform/cmsis/ \
-	sdk/inc/peripheral/ \
-	sdk/inc/bluetooth/profile/ \
-	sdk/inc/bluetooth/profile/server/ \
-	sdk/inc/bluetooth/gap/ \
-	sdk/src/ble/privacy/ \
-	sdk/inc/os/ \
-	sdk/inc/app/ \
-	sdk/src/ble/privacy \
+	$(SDK_DIR)/inc/ \
+	$(SDK_DIR)/inc/platform/ \
+	$(SDK_DIR)/inc/platform/cmsis/ \
+	$(SDK_DIR)/inc/peripheral/ \
+	$(SDK_DIR)/inc/bluetooth/profile/ \
+	$(SDK_DIR)/inc/bluetooth/profile/server/ \
+	$(SDK_DIR)/inc/bluetooth/gap/ \
+	$(SDK_DIR)/src/ble/privacy/ \
+	$(SDK_DIR)/inc/os/ \
+	$(SDK_DIR)/inc/app/ \
+	$(SDK_DIR)/src/ble/privacy \
 )
 
 INC += $(addprefix -I,$(DIRS))
@@ -60,33 +73,33 @@ CXXFLAGS += $(CXXFLAGS_MOD)
 # Flags for user C modules
 LDFLAGS += $(LDFLAGS_MOD)
 
-LIBS = -lc -lm -lnosys sdk/bin/rom_symbol_gcc.axf \
-	sdk/bin/auto_k_rf_bonding_lib_DUT.lib \
-	sdk/bin/auto_k_rf_bonding_lib_golden.lib \
-	sdk/bin/auto_k_rf.lib \
-	sdk/bin/bee2_adc_lib.lib \
-	sdk/bin/bee2_sdk.lib \
-	sdk/bin/electric_rtk_public_meter.lib \
-	sdk/bin/gap_bt5.lib \
-	sdk/bin/gap_utils.lib \
-	sdk/bin/ima_adpcm_lib.lib \
-	sdk/bin/msbc_lib.lib \
-	sdk/bin/opus_celt_enc_lib.lib \
-	sdk/bin/sbc_lib.lib \
-	sdk/bin/system_trace.lib \
+LIBS = -lc -lm -lnosys $(SDK_DIR)/bin/rom_symbol_gcc.axf \
+	$(SDK_DIR)/bin/auto_k_rf_bonding_lib_DUT.lib \
+	$(SDK_DIR)/bin/auto_k_rf_bonding_lib_golden.lib \
+	$(SDK_DIR)/bin/auto_k_rf.lib \
+	$(SDK_DIR)/bin/bee2_adc_lib.lib \
+	$(SDK_DIR)/bin/bee2_sdk.lib \
+	$(SDK_DIR)/bin/electric_rtk_public_meter.lib \
+	$(SDK_DIR)/bin/gap_bt5.lib \
+	$(SDK_DIR)/bin/gap_utils.lib \
+	$(SDK_DIR)/bin/ima_adpcm_lib.lib \
+	$(SDK_DIR)/bin/msbc_lib.lib \
+	$(SDK_DIR)/bin/opus_celt_enc_lib.lib \
+	$(SDK_DIR)/bin/sbc_lib.lib \
+	$(SDK_DIR)/bin/system_trace.lib \
 
 # Source Files
 include $(TARGET_DIR)/mksrc.mk
 
-SRC_S += sdk/src/mcu/rtl876x/arm/startup_rtl8762c_gcc.s
+SRC_S += $(SDK_DIR)/src/mcu/rtl876x/arm/startup_rtl8762c_gcc.s
 
 SRC_C += \
-    sdk/src/mcu/rtl876x/system_rtl8762c.c \
-	sdk/src/mcu/peripheral/rtl876x_rcc.c \
-	sdk/src/mcu/peripheral/rtl876x_gpio.c \
-	sdk/src/mcu/peripheral/rtl876x_uart.c \
-	sdk/src/mcu/peripheral/rtl876x_i2c.c \
-	sdk/src/ble/privacy/privacy_mgnt.c \
+    $(SDK_DIR)/src/mcu/rtl876x/system_rtl8762c.c \
+	$(SDK_DIR)/src/mcu/peripheral/rtl876x_rcc.c \
+	$(SDK_DIR)/src/mcu/peripheral/rtl876x_gpio.c \
+	$(SDK_DIR)/src/mcu/peripheral/rtl876x_uart.c \
+	$(SDK_DIR)/src/mcu/peripheral/rtl876x_i2c.c \
+	$(SDK_DIR)/src/ble/privacy/privacy_mgnt.c \
 
 OBJ += $(addprefix $(BUILD)/, $(SRC_C:.c=.o))
 OBJ += $(addprefix $(BUILD)/, $(SRC_CXX:.cpp=.o))
@@ -113,9 +126,10 @@ $(BUILD)/firmware.elf: $(OBJ)
 	$(ECHO) "LINK $@"
 	$(Q)$(CC) $(LDFLAGS) -o $@ $^ $(LIBS)
 	$(Q)$(SIZE) $@
-
+	
 $(BUILD)/firmware.bin: $(BUILD)/firmware.elf
-	$(Q)$(OBJCOPY) --output-target=binary $^ $@
+	$(Q)$(OBJCOPY) --output-target=binary --remove-section=App.trace $^ $@
+	$(Q)$(OBJCOPY) --output-target=binary --only-section=App.trace $^ $(BUILD)/firmware.trace
 
 ## Image
 $(BUILD)/image.bin: $(OEM_CONFIG) $(OTA_BANK0_HEADER) $(PATCH) $(FSBL) $(BUILD)/firmware.bin
